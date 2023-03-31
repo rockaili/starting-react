@@ -1,130 +1,135 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import styled from '@emotion/styled'
-import { Button } from '@mui/material';
+import React from "react";
+import PropTypes from "prop-types";
+import styled from "@emotion/styled";
+import { Button, CssBaseline } from "@mui/material";
 
-import './App.css';
+import "./App.css";
 
-const PokemonRow = ({ pokemon, onSelect }) => (
-  <tr key={pokemon.id}>
-    <td>{pokemon.name.english}</td>
-    <td>{pokemon.type.join(', ')}</td>
-    <td>
-      <Button variant="contained" color="primary" onClick={() => onSelect(pokemon)}>Select!</Button>
-    </td>
-  </tr>
-)
+const PokemonType = PropTypes.shape({
+  id: PropTypes.string.isRequired,
+  name: PropTypes.shape({
+    english: PropTypes.string.isRequired,
+    japanese: PropTypes.string.isRequired,
+    chinese: PropTypes.string.isRequired,
+    french: PropTypes.string.isRequired,
+  }),
+  type: PropTypes.arrayOf(PropTypes.string.isRequired),
+  base: PropTypes.shape({
+    HP: PropTypes.number.isRequired,
+    Attack: PropTypes.number.isRequired,
+    Defense: PropTypes.number.isRequired,
+    "Sp. Attack": PropTypes.number.isRequired,
+    "Sp. Defense": PropTypes.number.isRequired,
+    Speed: PropTypes.number.isRequired,
+  }),
+});
+
+const PokemonRow = ({ pokemon, onClick }) => (
+  <>
+    <tr key={pokemon.id}>
+      <td>{pokemon.name.english}</td>
+      <td>{pokemon.type.join(", ")}</td>
+      <td>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => onClick(pokemon)}
+        >
+          More Information
+        </Button>
+      </td>
+    </tr>
+  </>
+);
 
 PokemonRow.propTypes = {
-  pokemon: PropTypes.shape({
-    name: PropTypes.shape({
-      english: PropTypes.string.isRequired,
-    }),
-    type: PropTypes.arrayOf(PropTypes.string.isRequired)
-  }),
-  onSelect: PropTypes.func.isRequired,
-}
+  pokemon: PropTypes.arrayOf(PokemonType),
+};
 
-const PokemonInfo = ({ name, base }) => (
+const PokemonInfo = ({ name: { english }, base }) => (
   <div>
-    <h1>
-      {name.english}
-    </h1>
+    <h2>{english}</h2>
     <table>
-      {
-        Object.keys(base).map(key => (
+      <tbody>
+        {Object.keys(base).map((key) => (
           <tr key={key}>
             <td>{key}</td>
             <td>{base[key]}</td>
           </tr>
-        ))
-      }
+        ))}
+      </tbody>
     </table>
   </div>
-)
+);
 
-PokemonInfo.propTypes = {
-  name: PropTypes.shape({
-    english: PropTypes.string.isRequired,
-  }),
-  base: PropTypes.shape({
-    "HP": PropTypes.number.isRequired,
-    "Attack": PropTypes.number.isRequired,
-    "Defense": PropTypes.number.isRequired,
-    "Sp. Attack": PropTypes.number.isRequired,
-    "Sp. Defense": PropTypes.number.isRequired,
-    "Speed": PropTypes.number.isRequired,
-  })
-}
+PokemonInfo.propTypes = PokemonType;
 
 const Title = styled.h1`
   text-align: center;
 `;
-
-const TwoColumnLayout = styled.div`
-  display: grid;
-  gridTemplateColumns: 70% 30%;
-  gridColumnGap: 1rem;
-`;
-
-const Container = styled.div`
+const PageContainer = styled.div`
   margin: auto;
   width: 800px;
-  paddingTop: 1rem;
+  padding-top: 1em;
 `;
-
+const TwoColumnLayout = styled.div`
+  display: grid;
+  grid-template-columns: 80% 20%;
+  grid-column-gap: 1rem;
+`;
 const Input = styled.input`
   width: 100%;
-  font-size: x-large;
   padding: 0.2rem;
+  font-size: large;
 `;
 
 function App() {
-  const [filter, filterSet] = React.useState('');
-  const [pokemon, pokemonSet] = React.useState([]);
-  const [selectedItem, selectedItemSet] = React.useState(null);
+  const [filter, filterSet] = React.useState("");
+  const [pokemon, pokemonSet] = React.useState(null);
+  const [selectedPokemon, selectedPokemonSet] = React.useState(null);
 
   React.useEffect(() => {
-    fetch("http://localhost:3000/starting-react/pokemon.json")
-      .then(resp => resp.json())
-      .then(data => pokemonSet(data))
+    fetch("/starting-react/pokemon.json")
+      .then((resp) => resp.json())
+      .then((data) => pokemonSet(data));
   }, []);
 
+  if (!pokemon) {
+    return <div>Loading data</div>;
+  }
+
   return (
-    <Container>
+    <PageContainer>
+      <CssBaseline />
       <Title>Pokemon Search</Title>
       <TwoColumnLayout>
         <div>
           <Input
+            type="text"
             value={filter}
             onChange={(evt) => filterSet(evt.target.value)}
           />
-          <table width='100%'>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-              </tr>
-            </thead>
+          <table width="100%">
             <tbody>
               {pokemon
-                .filter((pokemon) => pokemon.name.english.toLowerCase().includes(filter.toLowerCase()))
+                .filter(({ name: { english } }) =>
+                  english
+                    .toLocaleLowerCase()
+                    .includes(filter.toLocaleLowerCase())
+                )
                 .slice(0, 20)
                 .map((pokemon) => (
                   <PokemonRow
                     pokemon={pokemon}
-                    key={pokemon.id}
-                    onSelect={(pokemon) => selectedItemSet(pokemon)}
+                    onClick={(pokemon) => selectedPokemonSet(pokemon)}
                   />
                 ))}
             </tbody>
           </table>
         </div>
-        {selectedItem && (
-          <PokemonInfo {...selectedItem} />
-        )}
+        {selectedPokemon && <PokemonInfo {...selectedPokemon} />}
       </TwoColumnLayout>
-    </Container>
+    </PageContainer>
   );
 }
 
